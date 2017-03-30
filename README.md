@@ -1,7 +1,7 @@
-Language XML Scraper [![Build Status](https://travis-ci.org/OpenFn/language-xmlscraper.svg?branch=master)](https://travis-ci.org/OpenFn/language-xmlscraper)
+Language El Zurdo [![Build Status](https://travis-ci.org/OpenFn/language-zurdo.svg?branch=master)](https://travis-ci.org/OpenFn/language-zurdo)
 ======================
 
-Language Pack for scraping XML data from websites.
+Language Pack for El Zurdo.
 
 Documentation
 -------------
