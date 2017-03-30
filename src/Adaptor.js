@@ -41,60 +41,38 @@ export function execute(...operations) {
 
 }
 
-// export function tito(xyz, salt) {
-//
-//   return state => {
-//   		console.log("../data/ficha_est-" + xyz + "_" + resumen(salt + base64.encode("ficha-" + xyz + ".xml")) + ".xml");
-//   }
-//
-// }
-
 /**
  * Make a GET request and POST the response somewhere else without failing.
  */
 export function tito(params) {
-
   return state => {
 
     const { codes, postUrl } = expandReferences(params)(state);
     const { baseUrl, salt } = state.configuration;
 
+    function assembleError({ response, error }) {
+      if (response && ([200, 201, 202].indexOf(response.statusCode) > -1)) return false;
+      if (error) return error;
+      return new Error(`Server responded with ${response.statusCode}`)
+    };
+
     for (var i = 0; i < codes.length; i++) {
 
-      const code = codes[i];
-      // TODO: fix this out.
-
-      const getEndpoint = ("data/ficha_est-" + code + "_" + resumen(salt + base64.encode("ficha-" + code + ".xml")) + ".xml")
-
-      const url = resolveUrl(baseUrl + '/', getEndpoint)
+      var code = codes[i];
+      var getEndpoint = ("data/ficha_est-" + code + "_" + resumen(salt + base64.encode("ficha-" + code + ".xml")) + ".xml")
+      var url = resolveUrl(baseUrl + '/', getEndpoint)
 
       console.log("Performing an error-less GET on URL: " + url);
+      new Promise((resolve, reject) => {
 
-      function assembleError({
-        response,
-        error
-      }) {
-        if (response && ([200, 201, 202].indexOf(response.statusCode) > -1)) return false;
-        if (error) return error;
-        return new Error(`Server responded with ${response.statusCode}`)
-      };
-
-      return new Promise((resolve, reject) => {
-
-        request({
-          url: url,
-          method: 'GET',
-        }, function(error, response, body) {
+        request.get(url, function(error, response, body) {
           console.log(body);
           const jsonBody = JSON.parse(parser.toJson(body));
           request.post({
             url: postUrl,
             json: jsonBody
           }, function(error, response, postResponseBody) {
-            error = assembleError({
-              error,
-              response
-            })
+            error = assembleError({ error, response })
             if (error) {
               console.error("POST failed.")
               reject(error);
@@ -104,17 +82,13 @@ export function tito(params) {
               resolve(jsonBody);
             }
           })
-        });
+        }); //close the request.get().
+      }); // close the Promise.
 
-      }).then((data) => {
-        const nextState = { ...state,
-          lastRun: data
-        };
-        return nextState;
-      })
-    }
-  }
-}
+    }; //close the for loop.
+
+  };
+};
 
 export {
   field,
