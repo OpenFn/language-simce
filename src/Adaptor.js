@@ -4,6 +4,7 @@ import { resolve as resolveUrl } from 'url';
 import base64 from 'base-64';
 import utf8 from 'utf8';
 import { resumen } from './resumen.min.js';
+var parser = require('xml2json');
 
 /** @module Adaptor */
 
@@ -31,31 +32,29 @@ export function execute(...operations) {
 
 }
 
-export function tito(xyz, salt) {
-
-  return state => {
-  		console.log("../data/ficha_est-" + xyz + "_" + resumen(salt + base64.encode("ficha-" + xyz + ".xml")) + ".xml");
-  }
-
-}
+// export function tito(xyz, salt) {
+//
+//   return state => {
+//   		console.log("../data/ficha_est-" + xyz + "_" + resumen(salt + base64.encode("ficha-" + xyz + ".xml")) + ".xml");
+//   }
+//
+// }
 
 /**
  * Make a GET request and POST the response somewhere else without failing.
  */
-export function fetchWithErrors(params) {
+export function tito(params) {
 
   return state => {
 
-    const { getEndpoint, query, externalId, postUrl } = expandReferences(params)(state);
+    const { code, postUrl } = expandReferences(params)(state);
+    const { baseUrl, salt } = state.configuration;
 
-    const { username, password, baseUrl, authType } = state.configuration;
-
-    var sendImmediately = authType == 'digest' ? false : true;
+    const getEndpoint = ("data/ficha_est-" + code + "_" + resumen(salt + base64.encode("ficha-" + code + ".xml")) + ".xml")
 
     const url = resolveUrl(baseUrl + '/', getEndpoint)
 
     console.log("Performing an error-less GET on URL: " + url);
-    console.log("Applying query: " + JSON.stringify(query))
 
     function assembleError({ response, error }) {
       if (response && ([200,201,202].indexOf(response.statusCode) > -1)) return false;
@@ -67,22 +66,13 @@ export function fetchWithErrors(params) {
 
       request({
         url: url,      //URL to hit
-        qs: query,     //Query string data
         method: 'GET', //Specify the method
-        auth: {
-          'user': username,
-          'pass': password,
-          'sendImmediately': sendImmediately
-        }
       }, function(error, response, body){
-        var taggedResponse = {
-          response: response,
-          externalId: externalId
-        }
-        console.log(taggedResponse)
+        console.log(parser.toJson(body))
+        const good = JSON.parse(parser.toJson(body))
         request.post ({
           url: postUrl,
-          json: taggedResponse
+          json: good
         }, function(error, response, postResponseBody){
           error = assembleError({error, response})
           if (error) {

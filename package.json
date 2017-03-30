@@ -26,7 +26,8 @@
     "website-scraper": "^2.2.2",
     "website-scraper-phantom": "^0.1.0",
     "x-ray": "^2.3.2",
-    "x-ray-phantom": "^1.0.1"
+    "x-ray-phantom": "^1.0.1",
+    "xml2json": "^0.11.0"
   },
   "devDependencies": {
     "assertion-error": "^1.0.1",
