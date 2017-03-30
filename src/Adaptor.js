@@ -56,9 +56,11 @@ export function tito(params) {
       return new Error(`Server responded with ${response.statusCode}`)
     };
 
-    for (var i = 0; i < codes.length; i++) {
+    // for (var i = 0; i < codes.length; i++) {
 
-      var code = codes[i];
+    codes.forEach(function (element) {
+
+      var code = element;
       var getEndpoint = ("data/ficha_est-" + code + "_" + resumen(salt + base64.encode("ficha-" + code + ".xml")) + ".xml")
       var url = resolveUrl(baseUrl + '/', getEndpoint)
 
@@ -85,7 +87,7 @@ export function tito(params) {
         }); //close the request.get().
       }); // close the Promise.
 
-    }; //close the for loop.
+    }); //close the for loop.
 
   };
 };
