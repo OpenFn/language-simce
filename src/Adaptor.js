@@ -1,9 +1,16 @@
-import { execute as commonExecute, expandReferences } from 'language-common';
+import {
+  execute as commonExecute,
+  expandReferences
+} from 'language-common';
 import request from 'request';
-import { resolve as resolveUrl } from 'url';
+import {
+  resolve as resolveUrl
+} from 'url';
 import base64 from 'base-64';
 import utf8 from 'utf8';
-import { resumen } from './resumen.min.js';
+import {
+  resumen
+} from './resumen.min.js';
 var parser = require('xml2json');
 
 /** @module Adaptor */
@@ -27,7 +34,9 @@ export function execute(...operations) {
   }
 
   return state => {
-    return commonExecute(...operations)({ ...initialState, ...state })
+    return commonExecute(...operations)({ ...initialState,
+      ...state
+    })
   };
 
 }
@@ -47,52 +56,75 @@ export function tito(params) {
 
   return state => {
 
-    const { code, postUrl } = expandReferences(params)(state);
+    const { codes, postUrl } = expandReferences(params)(state);
     const { baseUrl, salt } = state.configuration;
 
-    const getEndpoint = ("data/ficha_est-" + code + "_" + resumen(salt + base64.encode("ficha-" + code + ".xml")) + ".xml")
+    for (var i = 0; i < codes.length; i++) {
 
-    const url = resolveUrl(baseUrl + '/', getEndpoint)
+      const code = codes[i];
+      // TODO: fix this out.
 
-    console.log("Performing an error-less GET on URL: " + url);
+      const getEndpoint = ("data/ficha_est-" + code + "_" + resumen(salt + base64.encode("ficha-" + code + ".xml")) + ".xml")
 
-    function assembleError({ response, error }) {
-      if (response && ([200,201,202].indexOf(response.statusCode) > -1)) return false;
-      if (error) return error;
-      return new Error(`Server responded with ${response.statusCode}`)
+      const url = resolveUrl(baseUrl + '/', getEndpoint)
+
+      console.log("Performing an error-less GET on URL: " + url);
+
+      function assembleError({
+        response,
+        error
+      }) {
+        if (response && ([200, 201, 202].indexOf(response.statusCode) > -1)) return false;
+        if (error) return error;
+        return new Error(`Server responded with ${response.statusCode}`)
+      };
+
+      return new Promise((resolve, reject) => {
+
+        request({
+          url: url,
+          method: 'GET',
+        }, function(error, response, body) {
+          console.log(body);
+          const jsonBody = JSON.parse(parser.toJson(body));
+          request.post({
+            url: postUrl,
+            json: jsonBody
+          }, function(error, response, postResponseBody) {
+            error = assembleError({
+              error,
+              response
+            })
+            if (error) {
+              console.error("POST failed.")
+              reject(error);
+            } else {
+              console.log("POST succeeded.");
+              jsonBody.attemptedRbd = code,
+              resolve(jsonBody);
+            }
+          })
+        });
+
+      }).then((data) => {
+        const nextState = { ...state,
+          lastRun: data
+        };
+        return nextState;
+      })
     }
-
-    return new Promise((resolve, reject) => {
-
-      request({
-        url: url,      //URL to hit
-        method: 'GET', //Specify the method
-      }, function(error, response, body){
-        console.log(parser.toJson(body))
-        const good = JSON.parse(parser.toJson(body))
-        request.post ({
-          url: postUrl,
-          json: good
-        }, function(error, response, postResponseBody){
-          error = assembleError({error, response})
-          if (error) {
-            console.error("POST failed.")
-            reject(error);
-          } else {
-            console.log("POST succeeded.");
-            resolve(body);
-          }
-        })
-      });
-
-    }).then((data) => {
-      const nextState = { ...state, response: { body: data } };
-      return nextState;
-    })
   }
 }
 
 export {
-  field, fields, sourceValue, alterState, each,
-  merge, dataPath, dataValue, lastReferenceValue
-} from 'language-common';
+  field,
+  fields,
+  sourceValue,
+  alterState,
+  each,
+  merge,
+  dataPath,
+  dataValue,
+  lastReferenceValue
+}
+from 'language-common';
