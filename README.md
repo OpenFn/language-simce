@@ -13,7 +13,7 @@ Documentation
 {
   "endpoint": "data/",
   "salt": "GedgafmgTicSimce2015",
-  "mongoUrl": "mongodb://<USERNAME>:<PASSWORD>!@full-connection-string/<DATABASE>?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin"
+  "mongoConnectionUrl": "mongodb://<USERNAME>:<PASSWORD>!@full-connection-string/<DATABASE>?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin"
 }
 ```
 
