@@ -1,7 +1,9 @@
-Language El Zurdo [![Build Status](https://travis-ci.org/OpenFn/language-zurdo.svg?branch=master)](https://travis-ci.org/OpenFn/language-zurdo)
-======================
+Language Simce [![Build Status](https://travis-ci.org/OpenFn/language-simce.svg?branch=master)](https://travis-ci.org/OpenFn/language-zurdo)
+==============
 
-Language Pack for El Zurdo.
+Language Pack for extracting Chilean Schools Data.
+
+**Node 7.6**
 
 Documentation
 -------------
@@ -9,18 +11,31 @@ Documentation
 #### sample configuration
 ```json
 {
-  "username": "taylor@openfn.org",
-  "password": "supersecret",
-  "baseUrl": "https://instance_name.surveycto.com",
-  "authType": "digest"
+  "endpoint": "data/",
+  "salt": "GedgafmgTicSimce2015",
+  "mongoUrl": "mongodb://<USERNAME>:<PASSWORD>!@full-connection-string/<DATABASE>?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin"
 }
 ```
 
-#### run a tito...
+#### fetch2015
 ```js
-tito(8485, "sillySalt");
+fetch2015({
+  codes: [8873, 8874]
+});
 ```
 
+#### fetch2016
+```js
+fetch2016({
+  codes: [
+    1,
+    2,
+    3,
+    4,
+    5
+  ]
+});
+```
 
 [Docs](docs/index)
 

@@ -17,6 +17,8 @@ var parser = require('xml2json');
 var MongoClient = require('mongodb').MongoClient
   , assert = require('assert');
 
+var Buffer = require('buffer/').Buffer  // note: the trailing slash is important!
+
 /** @module Adaptor */
 
 /**
@@ -44,10 +46,79 @@ export function execute(...operations) {
   };
 
 }
+
 /**
  * Make a GET request and POST the response somewhere else without failing.
  */
-export function tito(params) {
+export function fetch2016(params) {
+
+  var insertDocuments = function(db, jsonArray, callback) {
+    // Get the documents collection
+    var collection = db.collection('simce_2016_school_records');
+    // Insert some documents
+    collection.insertMany(
+      jsonArray
+    , function(err, result) {
+      assert.equal(err, null);
+      console.log(result.insertedCount);
+      callback(result);
+    });
+  }
+
+  return state => {
+
+    const { codes } = expandReferences(params)(state);
+    const { endpoint, salt, mongoConnectionUrl } = state.configuration;
+
+    const baseUrl = "http://www.simce.cl";
+
+    var schools = [];
+
+    codes.forEach(function (code) {
+      // var code = element;
+      var secretEndpoint = (endpoint + "ficha-" + code + "_" + resumen(salt + base64.encode("ficha-" + code + ".json")) + ".json");
+      var url = resolveUrl(baseUrl + '/', secretEndpoint);
+      console.log("Performing a GET on URL: " + url);
+
+      try {
+        var res = request('GET', url);
+        const jsonBody = JSON.parse(res.getBody().toString('utf8'));
+        console.log("Successfully fetched RBD " + code);
+        schools.push(jsonBody);
+        console.log(JSON.stringify(jsonBody, null, 2));
+      } catch (e) {
+        console.log("Failed to fetch RBD " + code);
+      }
+    });
+
+    // Connection URL
+    var url = mongoConnectionUrl
+
+    // Use connect method to connect to the server
+    MongoClient.connect(url, {
+      // server: {
+        // socketOptions: {
+          connectTimeoutMS:360000,
+          socketTimeoutMS:360000
+        // }
+      // }
+    }, function(err, db) {
+      assert.equal(null, err);
+      console.log("Connected successfully to server");
+
+      insertDocuments(db, schools, function() {
+        db.close();
+      });
+    });
+
+  };
+};
+
+
+/**
+ * Make a GET request and POST the response somewhere else without failing.
+ */
+export function fetch2015(params) {
 
   var insertDocuments = function(db, jsonArray, callback) {
     // Get the documents collection
@@ -65,14 +136,16 @@ export function tito(params) {
   return state => {
 
     const { codes } = expandReferences(params)(state);
-    const { baseUrl, salt, mongoUrl } = state.configuration;
+    const { endpoint, salt, mongoConnectionUrl } = state.configuration;
+
+    const baseUrl = "http://www.simce.cl";
 
     var schools = [];
 
     codes.forEach(function (code) {
       // var code = element;
-      var getEndpoint = ("data/ficha_est-" + code + "_" + resumen(salt + base64.encode("ficha-" + code + ".xml")) + ".xml");
-      var url = resolveUrl(baseUrl + '/', getEndpoint);
+      var secretEndpoint = (endpoint + "ficha_est-" + code + "_" + resumen(salt + base64.encode("ficha-" + code + ".xml")) + ".xml");
+      var url = resolveUrl(baseUrl + '/', secretEndpoint);
       console.log("Performing a GET on URL: " + url);
 
       try {
