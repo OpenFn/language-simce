@@ -2,7 +2,8 @@ import {
   execute as commonExecute,
   expandReferences
 } from 'language-common';
-import request from 'request';
+var request = require('sync-request');
+// import request from 'request';
 import {
   resolve as resolveUrl
 } from 'url';
@@ -11,7 +12,10 @@ import utf8 from 'utf8';
 import {
   resumen
 } from './resumen.min.js';
+
 var parser = require('xml2json');
+var MongoClient = require('mongodb').MongoClient
+  , assert = require('assert');
 
 /** @module Adaptor */
 
@@ -40,54 +44,67 @@ export function execute(...operations) {
   };
 
 }
-
 /**
  * Make a GET request and POST the response somewhere else without failing.
  */
 export function tito(params) {
+
+  var insertDocuments = function(db, jsonArray, callback) {
+    // Get the documents collection
+    var collection = db.collection('simce_2015_school_records');
+    // Insert some documents
+    collection.insertMany(
+      jsonArray
+    , function(err, result) {
+      assert.equal(err, null);
+      console.log(result.insertedCount);
+      callback(result);
+    });
+  }
+
   return state => {
 
-    const { codes, postUrl } = expandReferences(params)(state);
-    const { baseUrl, salt } = state.configuration;
+    const { codes } = expandReferences(params)(state);
+    const { baseUrl, salt, mongoUrl } = state.configuration;
 
-    function assembleError({ response, error }) {
-      if (response && ([200, 201, 202].indexOf(response.statusCode) > -1)) return false;
-      if (error) return error;
-      return new Error(`Server responded with ${response.statusCode}`)
-    };
+    var schools = [];
 
-    // for (var i = 0; i < codes.length; i++) {
+    codes.forEach(function (code) {
+      // var code = element;
+      var getEndpoint = ("data/ficha_est-" + code + "_" + resumen(salt + base64.encode("ficha-" + code + ".xml")) + ".xml");
+      var url = resolveUrl(baseUrl + '/', getEndpoint);
+      console.log("Performing a GET on URL: " + url);
 
-    codes.forEach(function (element) {
+      try {
+        var res = request('GET', url);
+        const jsonBody = JSON.parse(parser.toJson(res.getBody()));
+        console.log("Successfully fetched RBD " + code);
+        schools.push(jsonBody.establecimientos.estab);
+        console.log(jsonBody);
+      } catch (e) {
+        console.log("Failed to fetch RBD " + code);
+      }
+    });
 
-      var code = element;
-      var getEndpoint = ("data/ficha_est-" + code + "_" + resumen(salt + base64.encode("ficha-" + code + ".xml")) + ".xml")
-      var url = resolveUrl(baseUrl + '/', getEndpoint)
+    // Connection URL
+    var url = mongoUrl
 
-      console.log("Performing an error-less GET on URL: " + url);
-      new Promise((resolve, reject) => {
+    // Use connect method to connect to the server
+    MongoClient.connect(url, {
+      // server: {
+        // socketOptions: {
+          connectTimeoutMS:360000,
+          socketTimeoutMS:360000
+        // }
+      // }
+    }, function(err, db) {
+      assert.equal(null, err);
+      console.log("Connected successfully to server");
 
-        request.get(url, function(error, response, body) {
-          console.log(body);
-          const jsonBody = JSON.parse(parser.toJson(body));
-          request.post({
-            url: postUrl,
-            json: jsonBody
-          }, function(error, response, postResponseBody) {
-            error = assembleError({ error, response })
-            if (error) {
-              console.error("POST failed.")
-              reject(error);
-            } else {
-              console.log("POST succeeded.");
-              jsonBody.attemptedRbd = code,
-              resolve(jsonBody);
-            }
-          })
-        }); //close the request.get().
-      }); // close the Promise.
-
-    }); //close the for loop.
+      insertDocuments(db, schools, function() {
+        db.close();
+      });
+    });
 
   };
 };
