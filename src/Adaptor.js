@@ -85,7 +85,7 @@ export function fetch2016(params) {
         const jsonBody = JSON.parse(res.getBody().toString('utf8'));
         console.log("Successfully fetched RBD " + code);
         schools.push(jsonBody);
-        console.log(JSON.stringify(jsonBody, null, 2));
+        // console.log(JSON.stringify(jsonBody, null, 2));
       } catch (e) {
         console.log("Failed to fetch RBD " + code);
       }
@@ -98,8 +98,9 @@ export function fetch2016(params) {
     MongoClient.connect(url, {
       // server: {
         // socketOptions: {
-          connectTimeoutMS:360000,
-          socketTimeoutMS:360000
+          // Setting a Very Long ten minute timeout...
+          connectTimeoutMS:1200000,
+          socketTimeoutMS:1200000
         // }
       // }
     }, function(err, db) {
